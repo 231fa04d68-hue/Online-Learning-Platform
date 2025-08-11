@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Learn MERN Stack - Detailed Courses</title>
+  <style>
+    /* Global Reset and Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background-color: #f9f9f9;
+      color: #333;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-size: 16px;
+    }
+
+    header {
+      background-color: #0a192f;
+      color: #fff;
+      padding: 1.5rem 2rem;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    nav {
+      background-color: #112240;
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      padding: 1rem;
+      box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    nav a {
+      color: #64ffda;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 1rem;
+      transition: color 0.3s ease;
+      cursor: pointer;
+    }
+
+    nav a:hover {
+      color: #52e0c4;
+    }
+
+    main {
+      flex-grow: 1;
+      max-width: 1100px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      width: 100%;
+    }
+
+    .container {
+      /* This will hold the overview */
+    }
+
+    .course-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e1e1e1;
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .card h3 {
+      color: #0a192f;
+      margin-bottom: 0.8rem;
+      font-size: 1.25rem;
+    }
+
+    .card p {
+      flex-grow: 1;
+      margin-bottom: 1.2rem;
+      color: #555;
+    }
+
+    .card button {
+      background-color: #64ffda;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #0a192f;
+      transition: background-color 0.3s ease;
+      font-size: 1rem;
+    }
+
+    .card button:hover {
+      background-color: #52e0c4;
+    }
+
+    /* Detailed Course Section */
+    .course-detail {
+      display: none;
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      max-width: 900px;
+      margin: 0 auto 3rem auto;
+    }
+
+    .course-detail h2 {
+      color: #0a192f;
+      margin-bottom: 1rem;
+      font-size: 2rem;
+    }
+
+    .course-detail h3 {
+      margin-top: 1.5rem;
+      margin-bottom: 0.7rem;
+      color: #0a192f;
+      font-size: 1.4rem;
+    }
+
+    .course-detail p,
+    .course-detail li {
+      margin-bottom: 1rem;
+      font-size: 1rem;
+      color: #444;
+    }
+
+    .course-detail ul,
+    .course-detail ol {
+      margin-left: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    pre {
+      background-color: #272822;
+      color: #f8f8f2;
+      padding: 1rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    code {
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-top: 2rem;
+      background-color: #0a192f;
+      color: #64ffda;
+      padding: 0.7rem 1.5rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 1rem;
+      transition: background-color 0.3s ease;
+    }
+
+    .back-btn:hover {
+      background-color: #082143;
+    }
+
+    footer {
+      background-color: #0a192f;
+      color: white;
+      text-align: center;
+      padding: 1.5rem 1rem;
+      font-size: 0.9rem;
+    }
+
+    a.external-link {
+      color: #64ffda;
+      text-decoration: underline;
+    }
+
+    a.external-link:hover {
+      color: #52e0c4;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      nav {
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+
+      .course-list {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Welcome to Learn MERN Stack</h1>
+    <p>Your journey to mastering MongoDB, Express, React, and Node.js begins here!</p>
+  </header>
+
+  <nav>
+    <a href="#" onclick="showSection('main')">Courses Overview</a>
+  </nav>
+
+  <main>
+    <!-- MAIN OVERVIEW - COURSE CARDS -->
+    <div id="main" class="container">
+      <section id="mongodb" class="section">
+        <h2>MongoDB Courses</h2>
+        <div class="course-list">
+          <div class="card">
+            <h3>Introduction to MongoDB</h3>
+            <p>Learn NoSQL basics and how MongoDB stores data.</p>
+            <button onclick="showSection('course-mongodb-intro')">Learn More</button>
+          </div>
+          <div class="card">
+            <h3>MongoDB Queries</h3>
+            <p>CRUD operations, filtering, and projections.</p>
+            <button onclick="showSection('course-mongodb-queries')">Learn More</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="express" class="section">
+        <h2>Express.js Courses</h2>
+        <div class="course-list">
+          <div class="card">
+            <h3>Setting Up Express</h3>
+            <p>Build your first server and understand middleware.</p>
+            <button onclick="showSection('course-express-setup')">Learn More</button>
+          </div>
+          <div class="card">
+            <h3>RESTful APIs</h3>
+            <p>Create APIs using routes and controllers in Express.</p>
+            <button onclick="showSection('course-express-rest')">Learn More</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="react" class="section">
+        <h2>React.js Courses</h2>
+        <div class="course-list">
+          <div class="card">
+            <h3>JSX & Components</h3>
+            <p>Create interactive UI with functional and class components.</p>
+            <button onclick="showSection('course-react-jsx')">Learn More</button>
+          </div>
+          <div class="card">
+            <h3>React State & Props</h3>
+            <p>Handle dynamic data and component communication.</p>
+            <button onclick="showSection('course-react-state')">Learn More</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="node" class="section">
+        <h2>Node.js Courses</h2>
+        <div class="course-list">
+          <div class="card">
+            <h3>Node Basics</h3>
+            <p>Understand the event loop and asynchronous JS.</p>
+            <button onclick="showSection('course-node-basics')">Learn More</button>
+          </div>
+          <div class="card">
+            <h3>Working with Files & Modules</h3>
+            <p>Use the fs module, path, and custom modules.</p>
+            <button onclick="showSection('course-node-files')">Learn More</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- COURSE DETAILS -->
+
+    <!-- MongoDB Introduction -->
+    <section id="course-mongodb-intro" class="course-detail">
+      <h2>Introduction to MongoDB</h2>
+      <p>MongoDB is a popular NoSQL database that stores data in flexible, JSON-like documents. It allows for dynamic schemas, making it ideal for modern web applications. Here's an extensive guide to understand MongoDB basics.</p>
+
+      <h3>What is MongoDB?</h3>
+      <p>MongoDB is a document-oriented database that provides high performance, high availability, and easy scalability. Unlike traditional relational databases, it does not use tables and rows but stores data in collections of BSON documents.</p>
+
+      <h3>Key Features</h3>
+      <ul>
+        <li>Document-based storage</li>
+        <li>Dynamic schemas</li>
+        <li>High scalability</li>
+        <li>Rich query language</li>
+        <li>Replication and sharding support</li>
+      </ul>
+
+      <h3>MongoDB Data Model</h3>
+      <p>Data is stored in BSON documents, which are binary-encoded JSON documents. Documents consist of field and value pairs.</p>
+
+      <h4>Example Document</h4>
+      <pre><code>{
+  "name": "John Doe",
+  "age": 30,
+  "email": "john@example.com",
+  "skills": ["JavaScript", "MongoDB", "Node.js"],
+  "address": {
+    "street": "123 Elm St",
+    "city": "Somewhere",
+    "zip": "12345"
+  }
+}
+</code></pre>
+
+      <h3>Installing MongoDB</h3>
+      <p>You can install MongoDB Community Server on your machine from the official website. Alternatively, use cloud services like MongoDB Atlas.</p>
+
+      <h3>MongoDB Compass</h3>
+      <p>MongoDB Compass is a GUI tool that allows you to explore your database visually.</p>
+
+      <h3>Basic Commands</h3>
+      <pre><code>// Start mongo shell
+mongo
+
+// Show databases
+show dbs
+
+// Use a database
+use myDatabase
+
+// Show collections
+show collections
+
+// Insert a document
+db.users.insertOne({ name: "Alice", age: 25 });
+
+// Find documents
+db.users.find({ age: { $gt: 20 } });
+</code></pre>
+
+      <h3>More Resources</h3>
+      <p>Official docs: <a class="external-link" href="https://docs.mongodb.com/" target="_blank" rel="noopener noreferrer">https://docs.mongodb.com/</a></p>
+
+      <button class="back-btn" onclick="showSection('main')">Back to Courses</button>
+    </section>
+
+    <!-- MongoDB Queries -->
+    <section id="course-mongodb-queries" class="course-detail">
+      <h2>MongoDB Queries</h2>
+      <p>This course dives deeper into querying MongoDB databases including CRUD operations, filtering, projections, and aggregation pipelines.</p>
+
+      <h3>Create: Insert Documents</h3>
+      <pre><code>db.users.insertOne({ name: "Bob", age: 32, status: "active" });
+db.users.insertMany([
+  { name: "Carol", age: 28 },
+  { name: "Dave", age: 45 }
+]);
+</code></pre>
+
+      <h3>Read: Find Documents</h3>
+      <p>Find documents using queries with comparison operators.</p>
+      <pre><code>db.users.find({ age: { $gt: 30 } });
+db.users.find({ status: "active" });
+db.users.find({}, { name: 1, age: 1 }); // projection to include only name and age
+</code></pre>
+
+      <h3>Update Documents</h3>
+      <pre><code>db.users.updateOne({ name: "Bob" }, { $set: { status: "inactive" } });
+db.users.updateMany({ age: { $lt: 30 } }, { $inc: { age: 1 } });
+</code></pre>
+
+      <h3>Delete Documents</h3>
+      <pre><code>db.users.deleteOne({ name: "Dave" });
+db.users.deleteMany({ age: { $gte: 40 } });
+</code></pre>
+
+      <h3>Aggregation Framework</h3>
+      <p>Powerful tool for data aggregation and transformation.</p>
+      <pre><code>db.orders.aggregate([
+  { $match: { status: "completed" } },
+  { $group: { _id: "$customerId", totalAmount: { $sum: "$amount" } } },
+  { $sort: { totalAmount: -1 } }
+]);
+</code></pre>
+
+      <h3>Indexes</h3>
+      <p>Improve query performance by creating indexes.</p>
+      <pre><code>db.users.createIndex({ name: 1 });
+db.users.getIndexes();
+</code></pre>
+
+      <h3>Conclusion</h3>
+      <p>Mastering MongoDB queries allows you to efficiently manipulate and retrieve data according to your application's needs.</p>
+
+      <button class="back-btn" onclick="showSection('main')">Back to Courses</button>
+    </section>
+
+    <!-- EXPRESS.JS PART -->
+
+    <!-- Express.js: Setting Up Express -->
+    <section id="course-express-setup" class="course-detail">
+      <h2>Express.js - Setting Up Express</h2>
+      <p>Express.js is a minimalist web framework for Node.js, used to build web applications and APIs efficiently.</p>
+
+      <h3>Installing Express</h3>
+      <pre><code>npm init -y
+npm install express
+</code></pre>
+
+      <h3>Creating a Basic Server</h3>
+      <pre><code>const express = require('express');
+const app = express();
+const PORT = 3000;
+
+// Middleware to parse JSON bodies
+app.use(express.json());
+
+app.get('/', (req, res) => {
+  res.send('Welcome to Express.js Server!');
+});
+
+app.listen(PORT, () => {
+  console.log(Server running on http://localhost:${PORT});
+});
+</code></pre>
+
+      <h3>Understanding Middleware</h3>
+      <p>Middleware are functions that execute during the request-response cycle. They can modify requests, responses, or terminate the cycle.</p>
+
+      <pre><code>// Example middleware
+app.use((req, res, next) => {
+  console.log(${req.method} request for ${req.url});
+  next();
+});
+</code></pre>
+
+      <h3>Routing Basics</h3>
+      <pre><code>app.get('/about', (req, res) => {
+  res.send('About Page');
+});
+
+app.post('/data', (req, res) => {
+  console.log(req.body);
+  res.json({ message: 'Data received' });
+});
+</code></pre>
+
+      <h3>Serving Static Files</h3>
+      <p>Use express.static to serve images, CSS, and JavaScript files.</p>
+      <pre><code>app.use(express.static('public'));
+</code></pre>
+
+      <h3>Error Handling Middleware</h3>
+      <pre><code>app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send('Something broke!');
+});
+</code></pre>
+
+      <h3>Organizing Routes</h3>
+      <p>Use express.Router() to modularize routes.</p>
+      <pre><code>const router = express.Router();
+
+router.get('/users', (req, res) => {
+  res.send('Users List');
+});
+
+app.use('/api', router);
+</code></pre>
+
+      <h3>Next Steps</h3>
+      <p>In the next course, we'll build RESTful APIs with Express, handling CRUD operations and middleware more deeply.</p>
+
+      <button class="back-btn" onclick="showSection('main')">Back to Courses</button>
+    </section>
+
+    <!-- Express.js: RESTful APIs -->
+    <section id="course-express-rest" class="course-detail">
+      <h2>Express.js - RESTful APIs</h2>
+      <p>Learn to create RESTful APIs using Express by handling routes, HTTP methods, controllers, and middleware.</p>
+
+      <h3>REST API Basics</h3>
+      <p>REST stands for Representational State Transfer. We use HTTP methods like GET, POST, PUT, DELETE to perform CRUD operations.</p>
+
+      <h3>Example: Simple Users API</h3>
+      <pre><code>const express = require('express');
+const app = express();
+app.use(express.json());
+
+let users = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' }
+];
+
+// Get all users
+app.get('/users', (req, res) => {
+  res.json(users);
+});
+
+// Get user by ID
+app.get('/users/:id', (req, res) => {
+  const user = users.find(u => u.id === parseInt(req.params.id));
+  if (!user) return res.status(404).send('User not found');
+  res.json(user);
+});
+
+// Create new user
+app.post('/users', (req, res) => {
+  const user = {
+    id: users.length + 1,
+    name: req.body.name
+  };
+  users.push(user);
+  res.status(201).json(user);
+});
+
+// Update user
+app.put('/users/:id', (req, res) => {
+  const user = users.find(u => u.id === parseInt(req.params.id));
+  if (!user) return res.status(404).send('User not found');
+  user.name = req.body.name;
+  res.json(user);
+});
+
+// Delete user
+app.delete('/users/:id', (req, res) => {
+  users = users.filter(u => u.id !== parseInt(req.params.id));
+  res.status(204).send();
+});
+
+const PORT = 3000;
+app.listen(PORT, () => console.log(API running on port ${PORT}));
+</code></pre>
+
+      <h3>Middleware for Validation</h3>
+      <pre><code>function validateUser(req, res, next) {
+  if (!req.body.name || req.body.name.length < 3) {
+    return res.status(400).send('Name is required and should be at least 3 characters.');
+  }
+  next();
+}
+
+app.post('/users', validateUser, (req, res) => {
+  // Create user logic here
+});
+</code></pre>
+
+      <h3>Using Express Router</h3>
+      <pre><code>const router = express.Router();
+
+router.route('/users')
+  .get((req, res) => { /* ... */ })
+  .post(validateUser, (req, res) => { /* ... */ });
+
+app.use('/api', router);
+</code></pre>
+
+      <h3>Response Status Codes</h3>
+      <ul>
+        <li>200 OK - Successful GET or PUT</li>
+        <li>201 Created - Successful POST creating a resource</li>
+        <li>204 No Content - Successful DELETE with no response body</li>
+        <li>400 Bad Request - Validation error</li>
+        <li>404 Not Found - Resource does not exist</li>
+      </ul>
+
+      <h3>Best Practices</h3>
+      <ul>
+        <li>Separate route logic and controllers</li>
+        <li>Use middleware for validation and authentication</li>
+        <li>Use proper HTTP status codes</li>
+        <li>Keep APIs stateless</li>
+      </ul>
+
+      <h3>Next Steps</h3>
+      <p>Integrate your Express API with MongoDB for persistent data storage, and implement authentication.</p>
+
+      <button class="back-btn" onclick="showSection('main')">Back to Courses</button>
+    </section>
+
+    <!-- REACT.JS PART -->
+
+    <!-- React.js: JSX & Components -->
+    <section id="course-react-jsx" class="course-detail">
+      <h2>React.js - JSX & Components</h2>
+      <p>React is a popular frontend library for building user interfaces using components and JSX syntax.</p>
+
+      <h3>What is JSX?</h3>
+      <p>JSX is a syntax extension that looks like HTML but is used inside JavaScript to describe UI elements.</p>
+
+      <pre><code>const element = &lt;h1&gt;Hello, world!&lt;/h1&gt;;
+</code></pre>
+
+      <h3>Creating Functional Components</h3>
+      <pre><code>function Greeting(props) {
+  return &lt;h1&gt;Hello, {props.name}!&lt;/h1&gt;;
+}
+
+export default Greeting;
+</code></pre>
+
+      <h3>Using Components</h3>
+      <pre><code>import React from 'react';
+import Greeting from './Greeting';
+
+function App() {
+  return (
+    &lt;div&gt;
+      &lt;Greeting name="Alice" /&gt;
+      &lt;Greeting name="Bob" /&gt;
+    &lt;/div&gt;
+  );
+}
+
+export default App;
+</code></pre>
+
+      <h3>Class Components (Legacy)</h3>
+      <pre><code>import React, { Component } from 'react';
+
+class Welcome extends Component {
+  render() {
+    return &lt;h1&gt;Hello, {this.props.name}&lt;/h1&gt;;
+  }
+}
+
+export default Welcome;
+</code></pre>
+
+      <h3>JSX Rules</h3>
+      <ul>
+        <li>Must return a single parent element</li>
+        <li>Use camelCase for attributes (e.g. className, onClick)</li>
+        <li>JavaScript expressions wrapped in curly braces {}</li>
+        <li>Self-close tags: &lt;img /&gt;, &lt;br /&gt;</li>
+      </ul>
+
+      <h3>Rendering Elements</h3>
+      <pre><code>import React from 'react';
+import ReactDOM from 'react-dom/client';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(&lt;App /&gt;);
+</code></pre>
+
+      <h3>Next Steps</h3>
+      <p>Learn about state and props to make your components interactive and dynamic.</p>
+
+      <button class="back-btn" onclick="showSection('main')">Back to Courses</button>
+    </section>
+
+    <!-- React.js: State & Props -->
+    <section id="course-react-state" class="course-detail">
+      <h2>React.js - State & Props</h2>
+      <p>State and props allow React components to manage dynamic data and communication between components.</p>
+
+      <h3>Props</h3>
+      <p>Props are read-only inputs passed from parent to child components.</p>
+      <pre><code>function Welcome(props) {
+  return &lt;h1&gt;Hello, {props.name}!&lt;/h1&gt;;
+}
+</code></pre>
+
+      <h3>State</h3>
+      <p>State is mutable data managed inside the component.</p>
+
+      <h4>Using useState Hook (Functional Components)</h4>
+      <pre><code>import React, { useState } from 'react';
+
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    &lt;div&gt;
+      &lt;p&gt;Count: {count}&lt;/p&gt;
+      &lt;button onClick={() =&gt; setCount(count + 1)}&gt;Increment&lt;/button&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+
+      <h4>Class Component State</h4>
+      <pre><code>class Counter extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { count: 0 };
+  }
+
+  increment = () =&gt; {
+    this.setState({ count: this.state.count + 1 });
+  };
+
+  render() {
+    return (
+      &lt;div&gt;
+        &lt;p&gt;Count: {this.state.count}&lt;/p&gt;
+        &lt;button onClick={this.increment}&gt;Increment&lt;/button&gt;
+      &lt;/div&gt;
+    );
+  }
+}
+</code></pre>
+
+      <h3>Component Communication</h3>
+      <p>Parent passes data via props; child can notify parent using callback props.</p>
+
+      <pre><code>function Parent() {
+  const [message, setMessage] = useState('');
+
+  const handleChildData = (data) =&gt; {
+    setMessage(data);
+  };
+
+  return (
+    &lt;div&gt;
+      &lt;Child onSend={handleChildData} /&gt;
+      &lt;p&gt;Message: {message}&lt;/p&gt;
+    &lt;/div&gt;
+  );
+}
+
+function Child({ onSend }) {
+  return &lt;button onClick={() =&gt; onSend('Hello Parent!')}&gt;Send Message&lt;/button&gt;;
+}
+</code></pre>
+
+      <h3>Best Practices</h3>
+      <ul>
+        <li>Keep state minimal and local when possible</li>
+        <li>Lift state up to common ancestor when needed</li>
+        <li>Use prop-types or TypeScript for props validation</li>
+      </ul>
+
+      <h3>Next Steps</h3>
+      <p>Explore React hooks like useEffect for side effects and advanced component patterns.</p>
+
+      <button class="back-btn" onclick="showSection('main')">Back to Courses</button>
+    </section>
+
+    <!-- NODE.JS PART -->
+
+    <!-- Node.js: Node Basics -->
+    <section id="course-node-basics" class="course-detail">
+      <h2>Node.js - Node Basics</h2>
+      <p>Node.js allows JavaScript to run on the server using the V8 engine. It uses an event-driven, non-blocking I/O model.</p>
+
+      <h3>Installing Node.js</h3>
+      <p>Download from <a class="external-link" href="https://nodejs.org/" target="_blank" rel="noopener noreferrer">https://nodejs.org/</a> and verify installation:</p>
+      <pre><code>node -v
+npm -v
+</code></pre>
+
+      <h3>Your First Node Script</h3>
+      <pre><code>console.log('Hello from Node.js!');
+</code></pre>
+
+      <h3>Understanding Event Loop</h3>
+      <p>Node.js runs on a single thread but handles I/O asynchronously using the event loop.</p>
+
+      <h3>Basic Modules</h3>
+      <pre><code>const os = require('os');
+console.log('Platform:', os.platform());
+console.log('CPU Cores:', os.cpus().length);
+</code></pre>
+
+      <h3>Creating a Simple HTTP Server</h3>
+      <pre><code>const http = require('http');
+
+const server = http.createServer((req, res) =&gt; {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('Hello from Node.js HTTP Server!');
+});
+
+server.listen(3000, () =&gt; {
+  console.log('Server running on http://localhost:3000');
+});
+</code></pre>
+
+      <h3>npm and Package.json</h3>
+      <p>npm is Node's package manager. Initialize your project:</p>
+      <pre><code>npm init
+npm install express
+</code></pre>
+
+      <h3>Next Steps</h3>
+      <p>Learn about Node's core modules like fs and path, and how to structure your Node applications.</p>
+
+      <button class="back-btn" onclick="showSection('main')">Back to Courses</button>
+    </section>
+
+    <!-- Node.js: Working with Files & Modules -->
+    <section id="course-node-files" class="course-detail">
+      <h2>Node.js - Working with Files & Modules</h2>
+      <p>Node.js provides modules for interacting with the file system and organizing your code.</p>
+
+      <h3>The fs Module</h3>
+      <p>Use fs to read and write files asynchronously or synchronously.</p>
+
+      <pre><code>const fs = require('fs');
+
+// Read file asynchronously
+fs.readFile('example.txt', 'utf8', (err, data) =&gt; {
+  if (err) throw err;
+  console.log(data);
+});
+
+// Write file asynchronously
+fs.writeFile('output.txt', 'Hello Node.js', err =&gt; {
+  if (err) throw err;
+  console.log('File saved!');
+});
+</code></pre>
+
+      <h3>The path Module</h3>
+      <p>Helps work with file and directory paths.</p>
+
+      <pre><code>const path = require('path');
+
+const fullPath = path.join(__dirname, 'files', 'example.txt');
+console.log(fullPath);
+</code></pre>
+
+      <h3>Creating and Exporting Modules</h3>
+      <pre><code>// math.js
+function add(a, b) {
+  return a + b;
+}
+
+module.exports = { add };
+
+// app.js
+const math = require('./math');
+console.log(math.add(2, 3)); // 5
+</code></pre>
+
+      <h3>Using ES6 Modules (experimental)</h3>
+      <pre><code>// package.json
+{
+  "type": "module"
+}
+
+// math.mjs
+export function add(a, b) {
+  return a + b;
+}
+
+// app.mjs
+import { add } from './math.mjs';
+console.log(add(2, 3));
+</code></pre>
+
+      <h3>Working with Streams</h3>
+      <p>Streams allow processing large data piece by piece.</p>
+      <pre><code>const fs = require('fs');
+
+const readStream = fs.createReadStream('largefile.txt', 'utf8');
+readStream.on('data', chunk =&gt; {
+  console.log('New chunk:', chunk);
+});
+</code></pre>
+
+      <h3>Next Steps</h3>
+      <p>Combine your knowledge with Express and MongoDB to build full-stack applications.</p>
+
+      <button class="back-btn" onclick="showSection('main')">Back to Courses</button>
+    </section>
+  </main>
+
+  <footer>
+    &copy; 2025 Learn MERN Stack | All rights reserved.
+  </footer>
+
+  <script>
+    function showSection(id) {
+      // Hide all course details and main overview
+      const sections = document.querySelectorAll('section.course-detail, #main');
+      sections.forEach(section => {
+        section.style.display = 'none';
+      });
+
+      // Show the requested section
+      const target = document.getElementById(id);
+      if (target) {
+        target.style.display = 'block';
+      }
+      // Scroll to top on section show
+      window.scrollTo(0, 0);
+    }
+
+    // On page load, show the main overview
+    window.onload = () => {
+      showSection('main');
+    };
+  </script>
+</body>
+
+</html>
