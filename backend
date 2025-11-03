@@ -1,0 +1,833 @@
+// server.js - Complete MERN Learning Platform Backend
+const express = require('express');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const cors = require('cors');
+require('dotenv').config();
+
+const app = express();
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Database connection
+const connectDB = async () => {
+    try {
+        await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/mern-learning');
+        console.log('MongoDB connected successfully');
+    } catch (error) {
+        console.error('Database connection error:', error);
+        process.exit(1);
+    }
+};
+
+// User Schema and Model
+const userSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: [true, 'Name is required'],
+        trim: true,
+        maxlength: [50, 'Name cannot be more than 50 characters']
+    },
+    email: {
+        type: String,
+        required: [true, 'Email is required'],
+        unique: true,
+        lowercase: true,
+        match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
+    },
+    password: {
+        type: String,
+        required: [true, 'Password is required'],
+        minlength: [6, 'Password must be at least 6 characters']
+    },
+    avatar: {
+        type: String,
+        default: null
+    },
+    role: {
+        type: String,
+        enum: ['student', 'instructor', 'admin'],
+        default: 'student'
+    },
+    isActive: {
+        type: Boolean,
+        default: true
+    },
+    lastLogin: {
+        type: Date,
+        default: Date.now
+    },
+    learningStats: {
+        totalHours: {
+            type: Number,
+            default: 0
+        },
+        completedCourses: {
+            type: Number,
+            default: 0
+        },
+        achievements: {
+            type: Number,
+            default: 0
+        }
+    }
+}, {
+    timestamps: true
+});
+
+// Hash password before saving
+userSchema.pre('save', async function(next) {
+    if (!this.isModified('password')) {
+        return next();
+    }
+    
+    try {
+        const salt = await bcrypt.genSalt(12);
+        this.password = await bcrypt.hash(this.password, salt);
+        next();
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Compare password method
+userSchema.methods.comparePassword = async function(candidatePassword) {
+    return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// Remove password from JSON output
+userSchema.methods.toJSON = function() {
+    const user = this.toObject();
+    delete user.password;
+    return user;
+};
+
+const User = mongoose.model('User', userSchema);
+
+// Course Progress Schema and Model
+const courseProgressSchema = new mongoose.Schema({
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    courseId: {
+        type: String,
+        required: true,
+        enum: ['mongo', 'express', 'react', 'node', 'project']
+    },
+    progress: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 100
+    },
+    completed: {
+        type: Boolean,
+        default: false
+    },
+    currentModule: {
+        type: String,
+        default: 'introduction'
+    },
+    timeSpent: {
+        type: Number, // in minutes
+        default: 0
+    },
+    lastAccessed: {
+        type: Date,
+        default: Date.now
+    },
+    quizScores: [{
+        module: String,
+        score: Number,
+        total: Number,
+        completedAt: Date
+    }],
+    completedModules: [{
+        type: String
+    }]
+}, {
+    timestamps: true
+});
+
+// Compound index to ensure one progress document per user per course
+courseProgressSchema.index({ user: 1, courseId: 1 }, { unique: true });
+
+// Update completed status when progress reaches 100
+courseProgressSchema.pre('save', function(next) {
+    if (this.progress >= 100 && !this.completed) {
+        this.completed = true;
+        this.completedAt = new Date();
+    }
+    next();
+});
+
+const CourseProgress = mongoose.model('CourseProgress', courseProgressSchema);
+
+// Authentication Middleware
+const auth = async (req, res, next) => {
+    try {
+        const token = req.header('Authorization')?.replace('Bearer ', '');
+        
+        if (!token) {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'No token provided, access denied' 
+            });
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+        const user = await User.findById(decoded.id).select('-password');
+        
+        if (!user) {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Token is not valid' 
+            });
+        }
+
+        if (!user.isActive) {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Account is deactivated' 
+            });
+        }
+
+        req.user = user;
+        next();
+    } catch (error) {
+        console.error('Auth middleware error:', error);
+        res.status(401).json({ 
+            success: false, 
+            message: 'Token is not valid' 
+        });
+    }
+};
+
+// Generate JWT Token
+const generateToken = (userId) => {
+    return jwt.sign({ id: userId }, process.env.JWT_SECRET || 'fallback_secret', {
+        expiresIn: process.env.JWT_EXPIRES_IN || '30d'
+    });
+};
+
+// Validation middleware
+const validateRequest = (validationRules) => {
+    return (req, res, next) => {
+        const errors = [];
+        
+        for (const rule of validationRules) {
+            const { field, check, message } = rule;
+            const value = req.body[field];
+            
+            if (!check(value)) {
+                errors.push({ field, message });
+            }
+        }
+        
+        if (errors.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Validation failed',
+                errors
+            });
+        }
+        
+        next();
+    };
+};
+
+// Validation rules
+const registerValidation = [
+    {
+        field: 'name',
+        check: (value) => value && value.trim().length >= 2 && value.trim().length <= 50,
+        message: 'Name must be between 2 and 50 characters'
+    },
+    {
+        field: 'email',
+        check: (value) => /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(value),
+        message: 'Please provide a valid email'
+    },
+    {
+        field: 'password',
+        check: (value) => value && value.length >= 6,
+        message: 'Password must be at least 6 characters long'
+    }
+];
+
+const loginValidation = [
+    {
+        field: 'email',
+        check: (value) => /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(value),
+        message: 'Please provide a valid email'
+    },
+    {
+        field: 'password',
+        check: (value) => value && value.length > 0,
+        message: 'Password is required'
+    }
+];
+
+// ==================== ROUTE HANDLERS ====================
+
+// Register user
+const register = async (req, res) => {
+    try {
+        const { name, email, password } = req.body;
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                message: 'User already exists with this email'
+            });
+        }
+
+        // Create new user
+        const user = new User({
+            name,
+            email,
+            password
+        });
+
+        await user.save();
+
+        // Initialize course progress for new user
+        const courses = ['mongo', 'express', 'react', 'node', 'project'];
+        const progressPromises = courses.map(courseId => 
+            new CourseProgress({
+                user: user._id,
+                courseId,
+                progress: 0,
+                completed: false
+            }).save()
+        );
+
+        await Promise.all(progressPromises);
+
+        // Generate token
+        const token = generateToken(user._id);
+
+        res.status(201).json({
+            success: true,
+            message: 'User registered successfully',
+            data: {
+                user,
+                token
+            }
+        });
+
+    } catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error during registration',
+            error: error.message
+        });
+    }
+};
+
+// Login user
+const login = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        // Check if user exists
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid credentials'
+            });
+        }
+
+        // Check if user is active
+        if (!user.isActive) {
+            return res.status(400).json({
+                success: false,
+                message: 'Account is deactivated'
+            });
+        }
+
+        // Verify password
+        const isMatch = await user.comparePassword(password);
+        if (!isMatch) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid credentials'
+            });
+        }
+
+        // Update last login
+        user.lastLogin = new Date();
+        await user.save();
+
+        // Generate token
+        const token = generateToken(user._id);
+
+        res.json({
+            success: true,
+            message: 'Login successful',
+            data: {
+                user,
+                token
+            }
+        });
+
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error during login',
+            error: error.message
+        });
+    }
+};
+
+// Get current user
+const getMe = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        
+        res.json({
+            success: true,
+            data: {
+                user
+            }
+        });
+
+    } catch (error) {
+        console.error('Get user error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// Get all course progress for a user
+const getUserProgress = async (req, res) => {
+    try {
+        const progress = await CourseProgress.find({ user: req.user.id })
+            .sort({ courseId: 1 });
+
+        res.json({
+            success: true,
+            data: {
+                progress
+            }
+        });
+
+    } catch (error) {
+        console.error('Get progress error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching progress',
+            error: error.message
+        });
+    }
+};
+
+// Update course progress
+const updateProgress = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+        const { progress, currentModule, timeSpent, completedModule } = req.body;
+
+        // Validate course ID
+        const validCourses = ['mongo', 'express', 'react', 'node', 'project'];
+        if (!validCourses.includes(courseId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid course ID'
+            });
+        }
+
+        // Find or create progress document
+        let courseProgress = await CourseProgress.findOne({
+            user: req.user.id,
+            courseId
+        });
+
+        if (!courseProgress) {
+            courseProgress = new CourseProgress({
+                user: req.user.id,
+                courseId,
+                progress: 0,
+                completed: false
+            });
+        }
+
+        // Update progress
+        if (progress !== undefined) {
+            courseProgress.progress = Math.min(Math.max(progress, 0), 100);
+        }
+
+        if (currentModule) {
+            courseProgress.currentModule = currentModule;
+        }
+
+        if (timeSpent) {
+            courseProgress.timeSpent += timeSpent;
+            
+            // Update user's total learning time
+            await User.findByIdAndUpdate(req.user.id, {
+                $inc: { 'learningStats.totalHours': timeSpent / 60 }
+            });
+        }
+
+        if (completedModule) {
+            if (!courseProgress.completedModules.includes(completedModule)) {
+                courseProgress.completedModules.push(completedModule);
+            }
+        }
+
+        courseProgress.lastAccessed = new Date();
+        await courseProgress.save();
+
+        // If course is completed, update user stats
+        if (courseProgress.completed) {
+            await User.findByIdAndUpdate(req.user.id, {
+                $inc: { 
+                    'learningStats.completedCourses': 1,
+                    'learningStats.achievements': 1 
+                }
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Progress updated successfully',
+            data: {
+                progress: courseProgress
+            }
+        });
+
+    } catch (error) {
+        console.error('Update progress error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while updating progress',
+            error: error.message
+        });
+    }
+};
+
+// Get user learning statistics
+const getLearningStats = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        const progress = await CourseProgress.find({ user: req.user.id });
+
+        const stats = {
+            completedCourses: progress.filter(p => p.completed).length,
+            inProgress: progress.filter(p => p.progress > 0 && !p.completed).length,
+            totalHours: user.learningStats.totalHours || 0,
+            achievements: user.learningStats.achievements || 0,
+            totalProgress: progress.reduce((sum, p) => sum + p.progress, 0) / progress.length
+        };
+
+        res.json({
+            success: true,
+            data: {
+                stats,
+                progress
+            }
+        });
+
+    } catch (error) {
+        console.error('Get stats error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching statistics',
+            error: error.message
+        });
+    }
+};
+
+// Reset course progress
+const resetProgress = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+
+        await CourseProgress.findOneAndUpdate(
+            { user: req.user.id, courseId },
+            {
+                progress: 0,
+                completed: false,
+                completedModules: [],
+                timeSpent: 0,
+                currentModule: 'introduction'
+            }
+        );
+
+        res.json({
+            success: true,
+            message: 'Progress reset successfully'
+        });
+
+    } catch (error) {
+        console.error('Reset progress error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while resetting progress',
+            error: error.message
+        });
+    }
+};
+
+// Update user profile
+const updateProfile = async (req, res) => {
+    try {
+        const { name, avatar } = req.body;
+        const updates = {};
+
+        if (name) updates.name = name;
+        if (avatar) updates.avatar = avatar;
+
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            updates,
+            { new: true, runValidators: true }
+        );
+
+        res.json({
+            success: true,
+            message: 'Profile updated successfully',
+            data: {
+                user
+            }
+        });
+
+    } catch (error) {
+        console.error('Update profile error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while updating profile',
+            error: error.message
+        });
+    }
+};
+
+// Change password
+const changePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        const user = await User.findById(req.user.id);
+        
+        // Verify current password
+        const isMatch = await user.comparePassword(currentPassword);
+        if (!isMatch) {
+            return res.status(400).json({
+                success: false,
+                message: 'Current password is incorrect'
+            });
+        }
+
+        // Update password
+        user.password = newPassword;
+        await user.save();
+
+        res.json({
+            success: true,
+            message: 'Password changed successfully'
+        });
+
+    } catch (error) {
+        console.error('Change password error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while changing password',
+            error: error.message
+        });
+    }
+};
+
+// Get user dashboard data
+const getDashboard = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        const progress = await CourseProgress.find({ user: req.user.id });
+        
+        const stats = {
+            completedCourses: progress.filter(p => p.completed).length,
+            inProgress: progress.filter(p => p.progress > 0 && !p.completed).length,
+            totalHours: user.learningStats.totalHours || 0,
+            achievements: user.learningStats.achievements || 0
+        };
+
+        res.json({
+            success: true,
+            data: {
+                user,
+                stats,
+                dashboard: {
+                    welcomeMessage: `Welcome back, ${user.name}!`,
+                    recentActivity: progress
+                        .filter(p => p.lastAccessed)
+                        .sort((a, b) => new Date(b.lastAccessed) - new Date(a.lastAccessed))
+                        .slice(0, 3)
+                        .map(p => ({
+                            course: p.courseId,
+                            progress: p.progress,
+                            lastAccessed: p.lastAccessed
+                        })),
+                    recommendations: getCourseRecommendations(progress)
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error('Get dashboard error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching dashboard',
+            error: error.message
+        });
+    }
+};
+
+// Helper function for course recommendations
+const getCourseRecommendations = (progress) => {
+    const recommendations = [];
+    const courseOrder = ['mongo', 'express', 'node', 'react', 'project'];
+    
+    for (const courseId of courseOrder) {
+        const courseProgress = progress.find(p => p.courseId === courseId);
+        if (!courseProgress || courseProgress.progress < 100) {
+            recommendations.push({
+                courseId,
+                reason: courseProgress ? 'Continue learning' : 'Start new course',
+                priority: courseProgress ? 1 : 2
+            });
+            break;
+        }
+    }
+    
+    return recommendations;
+};
+
+// Get all users (admin only)
+const getUsers = async (req, res) => {
+    try {
+        const users = await User.find().select('-password');
+        
+        res.json({
+            success: true,
+            data: {
+                users
+            }
+        });
+
+    } catch (error) {
+        console.error('Get users error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching users',
+            error: error.message
+        });
+    }
+};
+
+// ==================== ROUTES ====================
+
+// Public routes
+app.get('/', (req, res) => {
+    res.json({ 
+        success: true,
+        message: 'MERN Learning Platform API',
+        version: '1.0.0'
+    });
+});
+
+// Auth routes
+app.post('/api/auth/register', validateRequest(registerValidation), register);
+app.post('/api/auth/login', validateRequest(loginValidation), login);
+app.get('/api/auth/me', auth, getMe);
+
+// User routes (protected)
+app.get('/api/users/dashboard', auth, getDashboard);
+app.put('/api/users/profile', auth, updateProfile);
+app.put('/api/users/password', auth, changePassword);
+
+// Course routes (protected)
+app.get('/api/courses/progress', auth, getUserProgress);
+app.get('/api/courses/stats', auth, getLearningStats);
+app.put('/api/courses/progress/:courseId', auth, updateProgress);
+app.delete('/api/courses/progress/:courseId/reset', auth, resetProgress);
+
+// Admin routes (protected - basic implementation)
+app.get('/api/admin/users', auth, getUsers);
+
+// Sample data endpoint for testing
+app.post('/api/sample-data', auth, async (req, res) => {
+    try {
+        // Create sample progress data for testing
+        const sampleProgress = [
+            { courseId: 'mongo', progress: 75, timeSpent: 360 },
+            { courseId: 'express', progress: 50, timeSpent: 240 },
+            { courseId: 'react', progress: 25, timeSpent: 120 },
+            { courseId: 'node', progress: 10, timeSpent: 60 },
+            { courseId: 'project', progress: 0, timeSpent: 0 }
+        ];
+
+        for (const data of sampleProgress) {
+            await CourseProgress.findOneAndUpdate(
+                { user: req.user.id, courseId: data.courseId },
+                data,
+                { upsert: true, new: true }
+            );
+        }
+
+        res.json({
+            success: true,
+            message: 'Sample data created successfully'
+        });
+
+    } catch (error) {
+        console.error('Sample data error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error creating sample data',
+            error: error.message
+        });
+    }
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ 
+        success: false,
+        message: 'Something went wrong!',
+        error: process.env.NODE_ENV === 'production' ? {} : err.message
+    });
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+    res.status(404).json({ 
+        success: false,
+        message: 'Route not found' 
+    });
+});
+
+// Start server
+const PORT = process.env.PORT || 5000;
+
+connectDB().then(() => {
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+        console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+});
+
+module.exports = app;
